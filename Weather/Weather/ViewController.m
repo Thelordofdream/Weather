@@ -85,22 +85,37 @@
 }
 
 -(void) timerAction1{
-    myip=[self Getmyip];
-    _Ip.text=[@"IP:" stringByAppendingString:myip];
+//    myip=[self Getmyip];
+//    _Ip.text=[@"IP:" stringByAppendingString:myip];
     
-    url=@"http://ip.taobao.com/service/getIpInfo.php?ip=";
-    url=[url stringByAppendingString:myip];
-    URL = [NSURL URLWithString:url];
-    request = [NSURLRequest requestWithURL:URL cachePolicy:NSURLRequestReloadIgnoringLocalCacheData timeoutInterval:10];
-    // 创建同步链接
+//    url=@"http://ip.taobao.com/service/getIpInfo.php?ip=";
+//    url=[url stringByAppendingString:myip];
+//    URL = [NSURL URLWithString:url];
+//    request = [NSURLRequest requestWithURL:URL cachePolicy:NSURLRequestReloadIgnoringLocalCacheData timeoutInterval:10];
+//    // 创建同步链接
+//    NSURLResponse *response = nil;
+//    NSError *error = nil;
+//    city = [NSURLConnection sendSynchronousRequest:request returningResponse:&response error:&error];
+//    CITY = [NSJSONSerialization JSONObjectWithData:city options:0 error:&error];
+//    _City.text=[CITY[@"data"][@"city"] isEqual:@""]? @"杭州市":CITY[@"data"][@"city"];
+//    
+//    url=@"http://sugg.us.search.yahoo.net/gossip-gl-location/?appid=weather&output=xml&command=";
+//    url=[url stringByAppendingString:[CITY[@"data"][@"city"] isEqual:@""]? @"杭州市":CITY[@"data"][@"city"]];
+    
     NSURLResponse *response = nil;
     NSError *error = nil;
+    URL = [NSURL URLWithString:@"http://ip-api.com/json"];
+    request = [NSURLRequest requestWithURL:URL cachePolicy:NSURLRequestReloadIgnoringLocalCacheData timeoutInterval:10];
     city = [NSURLConnection sendSynchronousRequest:request returningResponse:&response error:&error];
     CITY = [NSJSONSerialization JSONObjectWithData:city options:0 error:&error];
-    _City.text=[CITY[@"data"][@"city"] isEqual:@""]? @"杭州市":CITY[@"data"][@"city"];
+    NSString *mycity = [self GetChinese:CITY[@"city"]];
+    mycity = [mycity stringByAppendingString:@"市"];
+    _City.text=[mycity isEqual:@""]? @"杭州市":mycity;
+    _Ip.text=[@"IP:" stringByAppendingString:CITY[@"query"]];
     
     url=@"http://sugg.us.search.yahoo.net/gossip-gl-location/?appid=weather&output=xml&command=";
-    url=[url stringByAppendingString:[CITY[@"data"][@"city"] isEqual:@""]? @"杭州市":CITY[@"data"][@"city"]];
+    url=[url stringByAppendingString:[CITY[@"city"] isEqual:@""]? @"杭州市":CITY[@"city"]];
+    
     url=[url stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
     URL = [NSURL URLWithString:url];
     request = [NSURLRequest requestWithURL:URL cachePolicy:NSURLRequestReloadIgnoringLocalCacheData timeoutInterval:10];
@@ -246,10 +261,39 @@
 
 - (NSString *) Getmyip
 {
-    NSError *error;
-    NSURL *ipURL = [NSURL URLWithString:@"http://ip.0tz.me"];
+    NSError *error = nil;
+    NSURL *ipURL = [NSURL URLWithString:@"http://104.238.223.24/ip.php"];
     NSString *Ip = [NSString stringWithContentsOfURL:ipURL encoding:1 error:&error];
     return Ip ? Ip : [error localizedDescription];
+}
+
+- (NSString *) GetChinese:(NSString *) apple
+{
+    @autoreleasepool{
+        url=@"http://api.fanyi.baidu.com/api/trans/vip/translate?q=";
+        url=[url stringByAppendingString:[apple stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding]];
+        url=[url stringByAppendingString:@"&from=en&to=zh&appid=20160219000012662&salt=1994111377&sign="];
+        
+        sign=[@"20160219000012662" stringByAppendingString:apple];
+        sign=[sign stringByAppendingString:@"1994111377"];
+        sign=[sign stringByAppendingString:@"iPCFWwPIxoDVfDIzQHoN"];
+        const char *cStr = [sign UTF8String];
+        unsigned char digest[16];
+        CC_MD5( cStr, (CC_LONG)strlen(cStr), digest );
+        NSMutableString *result = [NSMutableString stringWithCapacity:32];
+        for(int k = 0; k < 16 ;k++)
+            [result appendFormat:@"%2.2x",(int)digest[k]];
+        
+        url=[url stringByAppendingString:result];
+        URL = [NSURL URLWithString:url];
+        
+        request = [NSURLRequest requestWithURL:URL cachePolicy:NSURLRequestReloadIgnoringLocalCacheData timeoutInterval:10];
+        NSURLResponse *response = nil;
+        NSError *error=nil;
+        baidu = [NSURLConnection sendSynchronousRequest:request returningResponse:&response error:&error];
+        BAIDU = [NSJSONSerialization JSONObjectWithData:baidu options:0 error:&error];
+        return BAIDU[@"trans_result"][0][@"dst"];
+    }
 }
 
 - (void)didReceiveMemoryWarning {
